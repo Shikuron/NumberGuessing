@@ -3,6 +3,8 @@ using TMPro;
 using UnityEngine.UI;
 using UnityEditor;
 using System.Collections;
+using NUnit.Framework;
+using System.Collections.Generic;
 
 public class Gameplay : MonoBehaviour
 {
@@ -27,6 +29,10 @@ public class Gameplay : MonoBehaviour
     private bool isPlayerTurn;
     private bool gameActive;
 
+    private int computerMinGuess;
+    private int computerMaxGuess;
+    private List<int> computerGuesses;
+
     void InitializeUI()
     {
         submitButton.onClick.AddListener(SubmitGuess);
@@ -49,7 +55,7 @@ public class Gameplay : MonoBehaviour
         }
         if (guess < minNumber || guess > maxNumber)
         {
-            gameState.text += $"Please enter a number between {minNumber} - {maxNumber}";
+            gameState.text += $"<sprite=15> Please enter a number between {minNumber} - {maxNumber}";
             return;
         }
         ProcessGuess(guess, true);
@@ -65,20 +71,20 @@ public class Gameplay : MonoBehaviour
         if (guess == targetNumber)
         {
             //Win
-            gameLog.text += $"({PlayerName} got it right)\n";
+            gameLog.text += $"<sprite=\"symbols\" index=23>{PlayerName} got it right)\n";
             EndGame();
         }
         else if (currentAttemps >= maxAttemps)
         {
             //Lose
-            gameLog.text += $"(Game Over! The correct number was {targetNumber}\n";
+            gameLog.text += $"<sprite=10>Game Over! The correct number was {targetNumber}\n";
             EndGame();
         }
         else
         {
            //Wrong guess - give hint
            string hint = guess < targetNumber ? "Too Low" : "Too High";
-           gameLog.text += $"{hint}\n";
+           gameLog.text += $"<sprite=\"symbols\" index=24>{hint}\n";
 
            //switch players
            isPlayerTurn = !isPlayerTurn;
@@ -105,7 +111,26 @@ public class Gameplay : MonoBehaviour
     {
         yield return new WaitForSeconds(2f); // Wait to thinking
         if (!gameActive) yield break;
-        int computerGuess = Random.Range(minNumber, maxNumber + 1);
+        if (computerGuesses.Count > 0)
+        {
+            int lastGuess = computerGuesses[computerGuesses.Count - 1];
+            if (targetIsHigher)
+            {
+                computerMaxGuess = lastGuess + 1;
+            }
+            else
+            {
+                computerMinGuess = lastGuess - 1;
+            }
+        }
+
+        // AI uses Binary Search strategy
+        int computerGuess = (computerMinGuess + computerMaxGuess) / 2;
+
+        computerGuesses.Add(computerGuess);
+
+
+        //int computerGuess = Random.Range(minNumber, maxNumber + 1);
         ProcessGuess(computerGuess, false);
     }
 
@@ -137,6 +162,10 @@ public class Gameplay : MonoBehaviour
 
         guessInputField.Select();
         guessInputField.ActivateInputField();
+
+        computerMaxGuess = maxNumber;
+        computerMinGuess = minNumber;
+        computerGuesses = new List<int>();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
